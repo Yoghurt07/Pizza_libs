@@ -5,14 +5,17 @@ Delte bibliotek til **alle** dine scripts (notify, text UI, progressbar, 3D-inte
 ## Krav
 
 - **Lua 5.4** (`lua54 'yes'` i begge manifests).
-- `pizza_libs` skal starte **før** scripts der bruger det (sæt den tidligt i `server.cfg`).
+- Ressource-mappen på serveren skal hedde **`pizza_libs`** (små bogstaver), ellers virker `@pizza_libs/init.lua` og `exports['pizza_libs']` ikke.
+- I `server.cfg`: start libben **før** afhængige scripts, fx `ensure pizza_libs` før `ensure yoghurt_policejob`.
+- Hvis et andet script har `dependency 'Pizza_libs'` (stort P), er det stadig dækket: denne resource `provide`’er det navn.
 
 ## Brug i et andet script
 
 **1.** Tilføj afhængighed i dit scripts `fxmanifest.lua`:
 
 ```lua
-dependency 'pizza_libs' -- eller: dependencies { 'pizza_libs', }
+dependency 'pizza_libs' -- anbefalet (matcher mappenavn)
+-- dependency 'Pizza_libs' -- virker også pga. provide i pizza_libs
 ```
 
 **2.** Tilføj initiator som shared script (som `@st_libs/init.lua`):

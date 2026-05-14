@@ -6,6 +6,10 @@ author 'Yoghurt'
 description 'Shared FiveM library (NUI, notify, progressbar, …) for any resource — use like st_libs.'
 version '1.0.0'
 
+-- Mappen skal hedde `pizza_libs` (små bogstaver) så @pizza_libs/init.lua virker.
+-- Dette dækker scripts der stadig har dependency 'Pizza_libs' (fx. fra GitHub-navn).
+provide 'Pizza_libs'
+
 ui_page 'web/build/index.html'
 
 files {
