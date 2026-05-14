@@ -12,6 +12,7 @@ files {
     'init.lua',
     'modules/**.lua',
     'web/build/index.html',
+    'web/build/assets/**/*.png',
     'web/build/assets/**/*',
     'web/build/**/*',
     'locales/*.json',

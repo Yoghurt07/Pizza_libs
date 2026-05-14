@@ -65,9 +65,9 @@ Brug **ikke** længere det globale eventnavn `pizza_libs:notify` fra egne ressou
 | `lib`   | Alias for `pizza`                            |
 | `cache` | Replikeret nøgle/værdi-hjælpere (som før)    |
 
-## NUI assets (udseende)
+## NUI assets (PNG)
 
-Paneler, tast-bokse, ringe og verdens-pin ligger som **SVG** i `web/build/assets/`. Du kan erstatte filerne med egne designs (behold filnavnene, eller opdatér `url('assets/...')` og `<img src="...">` i `web/build/index.html`). `fxmanifest.lua` inkluderer `web/build/assets/**/*`, så nye filer i mappen sendes med ressourcen.
+Grafik ligger som **PNG** i `web/build/assets/` (`bg.png`, `bgRed.png`, `interact.png`, `interactRed.png`, `circle.png`, `circle_selected.png`, `pin.png`). Der findes også en kopi i **`assets/`** i repo-roden. Du kan erstatte filerne med egne — behold filnavnene, eller opdatér `url('assets/...')` i `web/build/index.html`.
 
 ## Credits
 

@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE (behold team-settings i .vscode hvis I vil dele dem)
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Python (hvis du senere tilføjer scripts lokalt)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node (hvis du senere tilføjer build-værktøj)
+node_modules/
