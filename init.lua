@@ -30,35 +30,38 @@ msgpack.setoption('ignore_invalid', true)
 local LoadResourceFile = LoadResourceFile
 local context = IsDuplicityVersion() and 'server' or 'client'
 
-local INTERACTION_API = {
-    create3DTextUIOnCoords = true,
-    update3DTextUIOnCoords = true,
-    remove3DTextUIFromCoords = true,
-    remove3DTextUIFromCoordsOption = true,
-    create3DTextUIOnEntity = true,
-    update3DTextUIOnEntity = true,
-    remove3DTextUIFromEntity = true,
-    remove3DTextUIFromEntityOption = true,
-    create3DTextUIOnPlayer = true,
-    update3DTextUIOnPlayer = true,
-    remove3DTextUIFromPlayer = true,
-    remove3DTextUIFromPlayerOption = true,
-    create3DTextUIOnModel = true,
-    update3DTextUIOnModel = true,
-    remove3DTextUIFromModel = true,
-    remove3DTextUIFromModelOption = true,
+--- Maps flat API names to their module folder (same idea as st_libs lazy modules + UI exports).
+local METHOD_MODULE = {
+    create3DTextUIOnCoords = 'interaction',
+    update3DTextUIOnCoords = 'interaction',
+    remove3DTextUIFromCoords = 'interaction',
+    remove3DTextUIFromCoordsOption = 'interaction',
+    create3DTextUIOnEntity = 'interaction',
+    update3DTextUIOnEntity = 'interaction',
+    remove3DTextUIFromEntity = 'interaction',
+    remove3DTextUIFromEntityOption = 'interaction',
+    create3DTextUIOnPlayer = 'interaction',
+    update3DTextUIOnPlayer = 'interaction',
+    remove3DTextUIFromPlayer = 'interaction',
+    remove3DTextUIFromPlayerOption = 'interaction',
+    create3DTextUIOnModel = 'interaction',
+    update3DTextUIOnModel = 'interaction',
+    remove3DTextUIFromModel = 'interaction',
+    remove3DTextUIFromModelOption = 'interaction',
+    showTextUI = 'textui',
+    hideTextUI = 'textui',
+    isTextUIOpen = 'textui',
+    addBlip = 'blips',
+    removeBlip = 'blips',
 }
 
-local TEXTUI_API = {
-    showTextUI = true,
-    hideTextUI = true,
-    isTextUIOpen = true,
-}
+local notifyEvent = ('__pizza_notify_%s'):format(resourceName)
 
-local BLIPS_API = {
-    addBlip = true,
-    removeBlip = true,
-}
+if not IsDuplicityVersion() then
+    RegisterNetEvent(notifyEvent, function(data)
+        exports[pizza_libs]:notify(data)
+    end)
+end
 
 function noop() end
 
@@ -82,11 +85,9 @@ local function loadModule(self, module)
         local result = fn()
         self[module] = result or noop
         if type(result) == 'table' then
-            if module == 'interaction' or module == 'textui' or module == 'blips' then
-                for k, v in pairs(result) do
-                    if type(v) == 'function' then
-                        rawset(self, k, v)
-                    end
+            for k, v in pairs(result) do
+                if type(v) == 'function' then
+                    rawset(self, k, v)
                 end
             end
         end
@@ -99,37 +100,30 @@ end
 --- @param index string
 --- @return any
 local function index(self, index)
-    local module = rawget(self, index)
-    if module ~= nil then
-        return module
+    local found = rawget(self, index)
+    if found ~= nil then
+        return found
     end
-    if INTERACTION_API[index] then
-        if not rawget(self, 'interaction') then
-            loadModule(self, 'interaction')
-        end
-        return rawget(self, index)
+    local modName = METHOD_MODULE[index]
+    if modName and not rawget(self, modName) then
+        loadModule(self, modName)
     end
-    if TEXTUI_API[index] then
-        if not rawget(self, 'textui') then
-            loadModule(self, 'textui')
-        end
-        return rawget(self, index)
-    end
-    if BLIPS_API[index] then
-        if not rawget(self, 'blips') then
-            loadModule(self, 'blips')
-        end
-        return rawget(self, index)
+    found = rawget(self, index)
+    if found ~= nil then
+        return found
     end
     local loaded = loadModule(self, index)
     if loaded then
-        return loaded
+        return rawget(self, index)
     end
-    local function method(...)
-        return export[index](nil, ...)
+    local exported = export[index]
+    if type(exported) == 'function' then
+        local function method(...)
+            return exported(nil, ...)
+        end
+        rawset(self, index, method)
+        return method
     end
-    rawset(self, index, method)
-    return method
 end
 
 local pizza = setmetatable({
@@ -139,6 +133,31 @@ local pizza = setmetatable({
     __index = index,
     __call = index,
 })
+
+--- Wait until pizza_libs is running and NUI is ready, then run your setup (st_libs-style).
+--- @param cb? fun()
+function pizza.ready(cb)
+    CreateThread(function()
+        local deadline = GetGameTimer() + 30000
+        while GetResourceState(pizza_libs) ~= 'started' and GetGameTimer() < deadline do
+            Wait(50)
+        end
+        local status
+        repeat
+            status = export.hasLoaded()
+            if status == true then
+                break
+            end
+            Wait(50)
+        until GetGameTimer() > deadline
+        if status ~= true then
+            error(status or '^1pizza_libs failed to become ready.^0', 2)
+        end
+        if cb then
+            cb()
+        end
+    end)
+end
 
 local intervals = {}
 local intervalId = 0
@@ -211,19 +230,21 @@ function pizza.onCache(key, cb)
 end
 
 _ENV.pizza = pizza
+_ENV.lib = pizza
 _ENV.cache = cache
 
-if not IsDuplicityVersion() then
-    loadModule(pizza, 'notify')
-end
-loadModule(pizza, 'blips')
-
-for i = 1, GetNumResourceMetadata(cache.resource, 'pizza_lib') do
-    local name = GetResourceMetadata(cache.resource, 'pizza_lib', i - 1)
-    if name and name ~= '' and not rawget(pizza, name) then
-        local mod = loadModule(pizza, name)
-        if type(mod) == 'function' then
-            pcall(mod)
+local seenMeta = {}
+for _, metaKey in ipairs({ 'pizza_lib', 'pizza_libs' }) do
+    for i = 1, GetNumResourceMetadata(cache.resource, metaKey) do
+        local name = GetResourceMetadata(cache.resource, metaKey, i - 1)
+        if name and name ~= '' and not seenMeta[name] then
+            seenMeta[name] = true
+            if not rawget(pizza, name) then
+                local mod = loadModule(pizza, name)
+                if type(mod) == 'function' then
+                    pcall(mod)
+                end
+            end
         end
     end
 end

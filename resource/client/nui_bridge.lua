@@ -29,6 +29,13 @@ exports('hasLoaded', function()
     return true
 end)
 
+--- Show a notification from any resource (used by consumer init + optional direct calls).
+--- @param _ any unused export slot
+--- @param data table
+exports('notify', function(_, data)
+    sendNui({ type = 'pizza:notify', data = data or {} })
+end)
+
 exports('sendNui', sendNui)
 exports('registerNuiActionHandler', registerNuiActionHandler)
 exports('clearNuiActionHandler', clearNuiActionHandler)
