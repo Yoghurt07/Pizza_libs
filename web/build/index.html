@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pizza_libs</title>
+  <style>
+    :root {
+      --pizza-bg: rgba(18, 18, 24, 0.92);
+      --pizza-border: rgba(255, 255, 255, 0.08);
+      --pizza-text: #f4f4f8;
+      --pizza-muted: rgba(244, 244, 248, 0.72);
+      --pizza-success: #3ecf8e;
+      --pizza-error: #ff5c5c;
+      --pizza-warning: #ffcc66;
+      --pizza-info: #6aa7ff;
+      --pizza-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      --pizza-radius: 12px;
+      --pizza-font: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+      --pizza-asset-panel-teal: url('assets/panel-teal.png');
+      --pizza-asset-panel-red: url('assets/panel-red.png');
+      --pizza-asset-key-teal: url('assets/keybox-teal.png');
+      --pizza-asset-key-red: url('assets/keybox-red.png');
+      --pizza-asset-pin: url('assets/pin.png');
+      --pizza-asset-ring-idle: url('assets/ring-idle.png');
+      --pizza-asset-ring-active: url('assets/ring-active.png');
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: var(--pizza-font);
+      background: transparent;
+    }
+
+    #pizza-root {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .pizza-stack {
+      position: fixed;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(360px, 92vw);
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .pizza-stack.top-right {
+      top: 18px;
+      right: 18px;
+      align-items: flex-end;
+    }
+
+    .pizza-stack.top-left {
+      top: 18px;
+      left: 18px;
+      align-items: flex-start;
+    }
+
+    .pizza-stack.top-center {
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      align-items: center;
+    }
+
+    .pizza-stack.bottom-right {
+      bottom: 18px;
+      right: 18px;
+      align-items: flex-end;
+    }
+
+    .pizza-stack.bottom-left {
+      bottom: 18px;
+      left: 18px;
+      align-items: flex-start;
+    }
+
+    .pizza-stack.bottom-center {
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      align-items: center;
+    }
+
+    .pizza-toast {
+      position: relative;
+      color: var(--pizza-text);
+      border-radius: 0;
+      padding: 14px 18px 16px;
+      border: none;
+      background-color: rgba(0, 0, 0, 0.25);
+      background-image: var(--pizza-asset-panel-teal);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-origin: border-box;
+      box-shadow: var(--pizza-shadow);
+      opacity: 0;
+      transform: translateX(18px) scale(0.98);
+      transition: transform 220ms ease, opacity 220ms ease;
+      max-width: 100%;
+    }
+
+    .pizza-toast.error {
+      background-image: var(--pizza-asset-panel-red);
+    }
+
+    .pizza-toast.show {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+
+    .pizza-toast.hide {
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: transform 200ms ease, opacity 200ms ease;
+    }
+
+    .pizza-toast .title {
+      font-weight: 650;
+      font-size: 14px;
+      margin: 0 0 4px 0;
+    }
+
+    .pizza-toast .desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--pizza-muted);
+      line-height: 1.35;
+    }
+
+    .pizza-toast .bar {
+      height: 3px;
+      border-radius: 999px;
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+
+    .pizza-toast.success .bar {
+      background: var(--pizza-success);
+    }
+
+    .pizza-toast.error .bar {
+      background: var(--pizza-error);
+    }
+
+    .pizza-toast.warning .bar {
+      background: var(--pizza-warning);
+    }
+
+    .pizza-toast.info .bar {
+      background: var(--pizza-info);
+    }
+
+    #pizza-progress {
+      position: fixed;
+      left: 50%;
+      bottom: 64px;
+      transform: translateX(-50%);
+      width: min(520px, 92vw);
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      z-index: 60;
+    }
+
+    #pizza-progress.visible {
+      display: flex;
+    }
+
+    #pizza-progress .pizza-progress-skin {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 16px 18px 18px;
+      background-image: var(--pizza-asset-panel-teal);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      box-shadow: var(--pizza-shadow);
+    }
+
+    #pizza-progress .label {
+      color: var(--pizza-text);
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    }
+
+    #pizza-progress .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    #pizza-progress .bar-ring {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.95;
+    }
+
+    #pizza-progress .bar-ring.start {
+      background-image: var(--pizza-asset-ring-idle);
+    }
+
+    #pizza-progress .bar-ring.end {
+      background-image: var(--pizza-asset-ring-active);
+    }
+
+    #pizza-progress .bar-wrap {
+      flex: 1 1 auto;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(0, 0, 0, 0.55);
+      overflow: hidden;
+    }
+
+    #pizza-progress .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2ad4c5, #6aa7ff);
+      transition: width linear;
+    }
+
+    #pizza-progress .cancel {
+      pointer-events: auto;
+      align-self: center;
+      margin-top: 2px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--pizza-text);
+      background-image: var(--pizza-asset-key-teal);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      border: none;
+      border-radius: 0;
+      padding: 8px 16px;
+      cursor: pointer;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.65);
+    }
+
+    #pizza-textui {
+      position: fixed;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%) translateX(-10px);
+      opacity: 0;
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 55;
+      max-width: min(420px, 70vw);
+    }
+
+    #pizza-textui.visible {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    #pizza-textui.right-center {
+      left: auto;
+      right: 18px;
+      transform: translateY(-50%) translateX(10px);
+    }
+
+    #pizza-textui.right-center.visible {
+      transform: translateY(-50%) translateX(0);
+    }
+
+    #pizza-textui .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 0;
+      background-image: var(--pizza-asset-panel-teal);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-color: rgba(0, 0, 0, 0.2);
+      border: none;
+      color: var(--pizza-text);
+      box-shadow: var(--pizza-shadow);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #pizza-textui .icon {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      background-image: var(--pizza-asset-ring-active);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    #pizza-interaction-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 120px;
+      transform: translateX(-50%) translateY(10px);
+      opacity: 0;
+      transition: opacity 160ms ease, transform 160ms ease;
+      z-index: 70;
+      pointer-events: none;
+    }
+
+    #pizza-interaction-hint.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #pizza-interaction-hint .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 0;
+      background-image: var(--pizza-asset-panel-teal);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-color: rgba(0, 0, 0, 0.2);
+      border: none;
+      color: var(--pizza-text);
+      box-shadow: var(--pizza-shadow);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    #pizza-interaction-hint kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 15px;
+      font-weight: 800;
+      color: #f4f4f8;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+      background-image: var(--pizza-asset-key-teal);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      border: none;
+      border-radius: 0;
+    }
+
+    #pizza-interaction-hint.pizza-hint--danger kbd {
+      background-image: var(--pizza-asset-key-red);
+    }
+
+    #pizza-interaction-pin {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 52px;
+      height: 52px;
+      margin-left: -26px;
+      margin-top: -26px;
+      opacity: 0;
+      transform: scale(0.75);
+      transition: opacity 160ms ease, transform 160ms ease;
+      z-index: 65;
+      pointer-events: none;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #pizza-interaction-pin.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    #pizza-interaction-pin img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+      animation: pizza-pin-breathe 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pizza-pin-breathe {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="pizza-root" aria-hidden="true">
+    <div id="pizza-notify" class="pizza-stack top-right"></div>
+    <div id="pizza-progress">
+      <div class="pizza-progress-skin">
+        <div class="label" id="pizza-progress-label"></div>
+        <div class="bar-row">
+          <div class="bar-ring start" aria-hidden="true"></div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="pizza-progress-fill"></div>
+          </div>
+          <div class="bar-ring end" aria-hidden="true"></div>
+        </div>
+        <button class="cancel" id="pizza-progress-cancel" type="button" style="display: none">Cancel</button>
+      </div>
+    </div>
+    <div id="pizza-textui">
+      <div class="pill">
+        <div class="icon" aria-hidden="true"></div>
+        <div id="pizza-textui-text"></div>
+      </div>
+    </div>
+    <div id="pizza-interaction-hint">
+      <div class="pill">
+        <kbd id="pizza-interaction-key">E</kbd>
+        <span id="pizza-interaction-text"></span>
+      </div>
+    </div>
+    <div id="pizza-interaction-pin" role="presentation">
+      <img src="assets/pin.png" width="52" height="52" alt="" draggable="false" />
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const notifyRoot = document.getElementById('pizza-notify');
+      const progressRoot = document.getElementById('pizza-progress');
+      const progressLabel = document.getElementById('pizza-progress-label');
+      const progressFill = document.getElementById('pizza-progress-fill');
+      const progressCancel = document.getElementById('pizza-progress-cancel');
+      const textuiRoot = document.getElementById('pizza-textui');
+      const textuiText = document.getElementById('pizza-textui-text');
+      const hintRoot = document.getElementById('pizza-interaction-hint');
+      const hintKey = document.getElementById('pizza-interaction-key');
+      const hintText = document.getElementById('pizza-interaction-text');
+      const pin = document.getElementById('pizza-interaction-pin');
+
+      let progressState = { visible: false, canCancel: false };
+
+      function post(action, extra) {
+        const body = Object.assign({ action: action }, extra || {});
+        return fetch(`https://${GetParentResourceName()}/nui_callback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+          body: JSON.stringify(body),
+        }).catch(function () {});
+      }
+
+      function setNotifyPosition(position) {
+        notifyRoot.className = 'pizza-stack ' + (position || 'top-right');
+      }
+
+      function pushToast(data) {
+        const position = data && data.position;
+        setNotifyPosition(position);
+
+        const el = document.createElement('div');
+        const type = (data && data.type) || 'info';
+        el.className = 'pizza-toast ' + type;
+
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = (data && data.title) || '';
+
+        const desc = document.createElement('p');
+        desc.className = 'desc';
+        desc.textContent = (data && data.description) || '';
+
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+
+        if (title.textContent) el.appendChild(title);
+        if (desc.textContent) el.appendChild(desc);
+        el.appendChild(bar);
+
+        notifyRoot.appendChild(el);
+        requestAnimationFrame(function () {
+          el.classList.add('show');
+        });
+
+        const duration = Math.max(1200, Number((data && data.duration) || 4000));
+        window.setTimeout(function () {
+          el.classList.remove('show');
+          el.classList.add('hide');
+          window.setTimeout(function () {
+            el.remove();
+          }, 220);
+        }, duration);
+      }
+
+      function startProgress(data) {
+        stopProgress();
+        progressState.visible = true;
+        progressState.canCancel = !!(data && data.canCancel);
+        progressRoot.classList.add('visible');
+        progressLabel.textContent = (data && data.label) || '';
+        progressFill.style.transitionDuration = '0ms';
+        progressFill.style.width = '0%';
+        requestAnimationFrame(function () {
+          const ms = Math.max(0, Number((data && data.duration) || 0));
+          progressFill.style.transitionDuration = ms + 'ms';
+          requestAnimationFrame(function () {
+            progressFill.style.width = '100%';
+          });
+        });
+
+        if (progressState.canCancel) {
+          progressCancel.style.display = 'inline-block';
+        } else {
+          progressCancel.style.display = 'none';
+        }
+      }
+
+      function stopProgress() {
+        progressRoot.classList.remove('visible');
+        progressFill.style.transitionDuration = '0ms';
+        progressFill.style.width = '0%';
+        progressState.visible = false;
+        progressState.canCancel = false;
+      }
+
+      progressCancel.addEventListener(
+        'click',
+        function () {
+          if (progressState.canCancel) {
+            post('progressbar:cancel', {});
+          }
+        },
+        false
+      );
+
+      window.addEventListener(
+        'keydown',
+        function (e) {
+          if (!progressState.visible || !progressState.canCancel) return;
+          if (e.key === 'Escape' || e.key === 'Backspace') {
+            e.preventDefault();
+            post('progressbar:cancel', {});
+          }
+        },
+        true
+      );
+
+      function showTextUI(data) {
+        const text = (data && data.text) || '';
+        const position = (data && data.position) || 'left-center';
+        textuiText.textContent = text;
+        textuiRoot.className = '';
+        if (position === 'right-center') {
+          textuiRoot.classList.add('right-center');
+        }
+        textuiRoot.classList.add('visible');
+      }
+
+      function hideTextUI() {
+        textuiRoot.classList.remove('visible');
+      }
+
+      function showInteraction(data) {
+        hintKey.textContent = (data && data.key) || 'E';
+        hintText.textContent = (data && data.text) || '';
+        hintRoot.classList.toggle('pizza-hint--danger', !!(data && (data.tone === 'danger' || data.danger === true)));
+        hintRoot.classList.add('visible');
+      }
+
+      function hideInteraction() {
+        hintRoot.classList.remove('visible');
+        hintRoot.classList.remove('pizza-hint--danger');
+      }
+
+      function showPin(data) {
+        if (!data || data.visible === false) {
+          pin.classList.remove('visible');
+          return;
+        }
+        const x = Number(data.x);
+        const y = Number(data.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+          pin.classList.remove('visible');
+          return;
+        }
+        pin.style.left = Math.round(x * window.innerWidth) + 'px';
+        pin.style.top = Math.round(y * window.innerHeight) + 'px';
+        pin.classList.add('visible');
+      }
+
+      window.addEventListener('message', function (event) {
+        const msg = event.data;
+        if (!msg || typeof msg !== 'object') return;
+        const type = msg.type;
+        const data = msg.data;
+
+        if (type === 'pizza:notify') {
+          pushToast(data || {});
+          return;
+        }
+
+        if (type === 'pizza:progressbar') {
+          const action = data && data.action;
+          if (action === 'start') {
+            startProgress(data || {});
+            return;
+          }
+          if (action === 'stop') {
+            stopProgress();
+            return;
+          }
+        }
+
+        if (type === 'pizza:textui:show') {
+          showTextUI(data || {});
+          return;
+        }
+
+        if (type === 'pizza:textui:hide') {
+          hideTextUI();
+          return;
+        }
+
+        if (type === 'pizza:interaction:show') {
+          showInteraction(data || {});
+          return;
+        }
+
+        if (type === 'pizza:interaction:hide') {
+          hideInteraction();
+          return;
+        }
+
+        if (type === 'pizza:interaction:pin') {
+          showPin(data || {});
+          return;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
